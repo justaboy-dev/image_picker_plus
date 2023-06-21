@@ -98,9 +98,12 @@ class _MyHomePageState extends State<MyHomePage> {
 
           /// When you make ImageSource from the camera these settings will be disabled because they belong to the gallery.
           galleryDisplaySettings: GalleryDisplaySettings(
-            appTheme:
-                AppTheme(focusColor: Colors.white, primaryColor: Colors.black),
+            appTheme: AppTheme(
+              focusColor: Colors.white,
+              primaryColor: Colors.black,
+            ),
             gridDelegate: _sliverGrid3Delegate(),
+            maximumSelection: 2
           ),
         );
         if (details != null) await displayDetails(details);
