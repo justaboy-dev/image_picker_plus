@@ -105,6 +105,12 @@ class _MyHomePageState extends State<MyHomePage> {
             gridDelegate: _sliverGrid3Delegate(),
             maximumSelection: 2
           ),
+          selectImageConfig: SelectImageConfig(
+            maxFilesSize: 20,
+            maxFilesSizeError: "Maximum size is 20 MB",
+            maxImages: 3,
+            maxVideos: 1,
+          )
         );
         if (details != null) await displayDetails(details);
       },

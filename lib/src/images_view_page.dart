@@ -29,6 +29,7 @@ class ImagesViewPage extends StatefulWidget {
   final Color blackColor;
   final bool showImagePreview;
   final SliverGridDelegateWithFixedCrossAxisCount gridDelegate;
+  final SelectImageConfig selectImageConfig;
   const ImagesViewPage({
     Key? key,
     required this.multiSelectedImages,
@@ -46,6 +47,7 @@ class ImagesViewPage extends StatefulWidget {
     required this.gridDelegate,
     required this.maximumSelection,
     this.callbackFunction,
+    required this.selectImageConfig,
   }) : super(key: key);
 
   @override
@@ -154,7 +156,6 @@ class _ImagesViewPageState extends State<ImagesViewPage>
       }
       _mediaList.value.addAll(temp);
       allImages.value.addAll(imageTemp);
-      selectedImage.value = allImages.value[0];
       currentPage.value++;
       isImagesReady.value = true;
       WidgetsBinding.instance.addPostFrameCallback((_) => setState(() {}));
@@ -539,6 +540,15 @@ class _ImagesViewPageState extends State<ImagesViewPage>
         bool close = selectionImageCheck(image, selectedImagesValue, index);
         if (close) return;
       }
+
+      /// Check if image size is greater than maxFilesSize
+      if (widget.selectImageConfig.maxFilesSize > 0) {
+        if (image.lengthSync() > widget.selectImageConfig.maxFilesSize) {
+          showToast(widget.selectImageConfig.maxFilesSizeError);
+          return;
+        }
+      }
+
       selectedImage.value = image;
       expandImageView.value = false;
       moveAwayHeight.value = 0;
@@ -568,6 +578,30 @@ class _ImagesViewPageState extends State<ImagesViewPage>
       return true;
     } else {
       if (multiSelectionValue.length < widget.maximumSelection) {
+        /// Check if image size is greater than maxFilesSize
+        if (widget.selectImageConfig.maxFilesSize > 0) {
+          if (image.lengthSync() > widget.selectImageConfig.maxFilesSize) {
+            showToast(widget.selectImageConfig.maxFilesSizeError);
+            return false;
+          }
+        }
+
+        if (widget.selectImageConfig.maxImages > 0) {
+          final int numberOfImages =
+              multiSelectionValue.where((element) => isImages(element)).length;
+          if (numberOfImages >= widget.selectImageConfig.maxImages) {
+            return false;
+          }
+        }
+
+        if (widget.selectImageConfig.maxVideos > 0) {
+          final int numberOfVideos =
+              multiSelectionValue.where((element) => isVideos(element)).length;
+          if (numberOfVideos >= widget.selectImageConfig.maxVideos) {
+            return false;
+          }
+        }
+
         setState(() {
           if (!multiSelectionValue.contains(image)) {
             multiSelectionValue.add(image);
