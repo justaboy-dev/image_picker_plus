@@ -103,13 +103,13 @@ class _MyHomePageState extends State<MyHomePage> {
               primaryColor: Colors.black,
             ),
             gridDelegate: _sliverGrid3Delegate(),
-            maximumSelection: 2
+            maximumSelection: 10
           ),
           selectImageConfig: SelectImageConfig(
-            maxFilesSize: 20,
+            maxFilesSize: 20 * 1024 * 1024,
             maxFilesSizeError: "Maximum size is 20 MB",
-            maxImages: 3,
-            maxVideos: 1,
+            maxImages: 8,
+            maxVideos: 2,
           )
         );
         if (details != null) await displayDetails(details);
@@ -163,10 +163,10 @@ class _MyHomePageState extends State<MyHomePage> {
 
   SliverGridDelegateWithFixedCrossAxisCount _sliverGrid3Delegate() {
     return const SliverGridDelegateWithFixedCrossAxisCount(
-      crossAxisCount: 3,
-      crossAxisSpacing: 1.7,
-      mainAxisSpacing: 1.5,
-      childAspectRatio: .5,
+      crossAxisCount: 4,
+      crossAxisSpacing: 1,
+      mainAxisSpacing: 1,
+      childAspectRatio: 1,
     );
   }
 

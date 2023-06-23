@@ -586,7 +586,7 @@ class _ImagesViewPageState extends State<ImagesViewPage>
           }
         }
 
-        if (widget.selectImageConfig.maxImages > 0) {
+        if (widget.selectImageConfig.maxImages > 0 && isImages(image)) {
           final int numberOfImages =
               multiSelectionValue.where((element) => isImages(element)).length;
           if (numberOfImages >= widget.selectImageConfig.maxImages) {
@@ -594,7 +594,7 @@ class _ImagesViewPageState extends State<ImagesViewPage>
           }
         }
 
-        if (widget.selectImageConfig.maxVideos > 0) {
+        if (widget.selectImageConfig.maxVideos > 0 && isVideos(image)) {
           final int numberOfVideos =
               multiSelectionValue.where((element) => isVideos(element)).length;
           if (numberOfVideos >= widget.selectImageConfig.maxVideos) {
