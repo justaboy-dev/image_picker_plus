@@ -134,7 +134,7 @@ class _ImagesViewPageState extends State<ImagesViewPage>
           : (widget.showInternalImages ? RequestType.image : RequestType.video);
 
       List<AssetPathEntity> albums =
-          await PhotoManager.getAssetPathList(onlyAll: true, type: type);
+          await PhotoManager.getAssetPathList(type: type, hasAll: true);
       if (albums.isEmpty) {
         WidgetsBinding.instance
             .addPostFrameCallback((_) => setState(() => noImages = true));
@@ -142,8 +142,7 @@ class _ImagesViewPageState extends State<ImagesViewPage>
       } else if (noImages) {
         noImages = false;
       }
-      List<AssetEntity> media =
-          await albums[0].getAssetListPaged(page: currentPageValue, size: 60);
+      List<AssetEntity> media = await albums[0].getAssetListPaged(page: currentPageValue, size: 60);
       List<FutureBuilder<Uint8List?>> temp = [];
       List<File?> imageTemp = [];
 
@@ -158,6 +157,9 @@ class _ImagesViewPageState extends State<ImagesViewPage>
       allImages.value.addAll(imageTemp);
       currentPage.value++;
       isImagesReady.value = true;
+      if (widget.multiSelectedImages.value.isNotEmpty) {
+        widget.multiSelectionMode.value = true;
+      }
       WidgetsBinding.instance.addPostFrameCallback((_) => setState(() {}));
     } else {
       await PhotoManager.requestPermissionExtend();
@@ -469,7 +471,8 @@ class _ImagesViewPageState extends State<ImagesViewPage>
                 FutureBuilder<Uint8List?> mediaList = mediaListValue[index];
                 File? image = allImagesValue[index];
                 if (image != null) {
-                  bool imageSelected = selectedImagesValue.contains(image);
+                  bool imageSelected =
+                      selectedImagesValue.any((e) => e.path == image.path);
                   List<File> multiImages = selectedImagesValue;
                   return Stack(
                     children: [
@@ -560,10 +563,11 @@ class _ImagesViewPageState extends State<ImagesViewPage>
   bool selectionImageCheck(
       File image, List<File> multiSelectionValue, int index,
       {bool enableCopy = false}) {
-    if (multiSelectionValue.contains(image) && selectedImage.value == image) {
+    if (multiSelectionValue.any((e) => e.path == image.path) &&
+        selectedImage.value?.path == image.path) {
       setState(() {
-        int indexOfImage =
-            multiSelectionValue.indexWhere((element) => element == image);
+        int indexOfImage = multiSelectionValue
+            .indexWhere((element) => element.path == image.path);
         multiSelectionValue.removeAt(indexOfImage);
         if (multiSelectionValue.isNotEmpty &&
             indexOfImage < scaleOfCropsKeys.value.length) {
@@ -578,6 +582,8 @@ class _ImagesViewPageState extends State<ImagesViewPage>
       return true;
     } else {
       if (multiSelectionValue.length < widget.maximumSelection) {
+        bool isSelected = multiSelectionValue.any((e) => e.path == image.path);
+
         /// Check if image size is greater than maxFilesSize
         if (widget.selectImageConfig.maxFilesSize > 0) {
           if (image.lengthSync() > widget.selectImageConfig.maxFilesSize) {
@@ -603,7 +609,7 @@ class _ImagesViewPageState extends State<ImagesViewPage>
         }
 
         setState(() {
-          if (!multiSelectionValue.contains(image)) {
+          if (!isSelected) {
             multiSelectionValue.add(image);
             if (multiSelectionValue.length > 1) {
               scaleOfCropsKeys.value.add(cropKey.value.currentState?.scale);
@@ -615,9 +621,9 @@ class _ImagesViewPageState extends State<ImagesViewPage>
             scaleOfCropsKeys.value.add(cropKey.value.currentState?.scale);
             areaOfCropsKeys.value.add(cropKey.value.currentState?.area);
           }
-          if (widget.showImagePreview && multiSelectionValue.contains(image)) {
-            int index =
-                multiSelectionValue.indexWhere((element) => element == image);
+          if (widget.showImagePreview && isSelected) {
+            int index = multiSelectionValue
+                .indexWhere((element) => element.path == image.path);
             if (indexOfLatestImage != -1) {
               scaleOfCropsKeys.value[indexOfLatestImage] =
                   cropKey.value.currentState?.scale;

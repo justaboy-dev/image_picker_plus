@@ -41,7 +41,7 @@ class MultiSelectionMode extends StatelessWidget {
               child: imageSelected
                   ? Center(
                       child: Text(
-                        "${multiSelectedImage.indexOf(image) + 1}",
+                        "${multiSelectedImage.indexWhere((e) => e.path == image.path) + 1}",
                         style: const TextStyle(color: Colors.white),
                       ),
                     )

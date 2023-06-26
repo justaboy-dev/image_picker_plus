@@ -97,6 +97,7 @@ class CustomImagePickerState extends State<CustomImagePicker>
     showAllTabs = cameraAndVideoEnabled && noGallery;
     whiteColor = appTheme.primaryColor;
     blackColor = appTheme.focusColor;
+    multiSelectedImage.value = List.from(widget.selectImageConfig?.selectedFiles ?? []);
   }
 
   @override
@@ -230,11 +231,7 @@ class CustomImagePickerState extends State<CustomImagePicker>
               builder: (context, bool multiSelectionModeValue, child) {
                 if (enableVideo || enableCamera) {
                   if (!showImagePreview) {
-                    if (multiSelectionModeValue) {
-                      return clearSelectedImages();
-                    } else {
-                      return buildTabBar();
-                    }
+                    return buildTabBar();
                   } else {
                     return Visibility(
                       visible: !multiSelectionModeValue,
@@ -270,6 +267,7 @@ class CustomImagePickerState extends State<CustomImagePicker>
         redDeleteText: redDeleteText,
         moveToVideoScreen: moveToVideo,
         selectedVideo: selectedVideoValue,
+        selectedFile: multiSelectedImage.value,
       ),
     );
   }
@@ -308,10 +306,7 @@ class CustomImagePickerState extends State<CustomImagePicker>
       builder: (context, bool showDeleteTextValue, child) => AnimatedSwitcher(
         duration: const Duration(milliseconds: 200),
         switchInCurve: Curves.easeInOutQuart,
-        child: widget.source == ImageSource.both ||
-                widget.pickerSource == PickerSource.both
-            ? (showDeleteTextValue ? tapBarMessage(true) : tabBar())
-            : const SizedBox(),
+        child: tabBar(),
       ),
     );
   }
@@ -320,6 +315,22 @@ class CustomImagePickerState extends State<CustomImagePicker>
     double widthOfScreen = MediaQuery.of(context).size.width;
     int divideNumber = showAllTabs ? 3 : 2;
     double widthOfTab = widthOfScreen / divideNumber;
+
+    bool isLimitVideos = false;
+    bool isLimitImages = false;
+    if (widget.selectImageConfig != null &&
+        widget.selectImageConfig!.maxImages > 0) {
+      final int numberOfImages = multiSelectedImage.value.where((element) => isImages(element)).length;
+      isLimitImages = numberOfImages >= widget.selectImageConfig!.maxImages;
+    }
+
+    if (widget.selectImageConfig != null &&
+        widget.selectImageConfig!.maxVideos > 0) {
+      final int numberOfVideos =
+          multiSelectedImage.value.where((element) => isVideos(element)).length;
+      isLimitVideos = numberOfVideos >= widget.selectImageConfig!.maxVideos;
+    }
+
     return ValueListenableBuilder(
       valueListenable: selectedPage,
       builder: (context, SelectedPage selectedPageValue, child) {
@@ -331,8 +342,9 @@ class CustomImagePickerState extends State<CustomImagePicker>
             Row(
               children: [
                 if (noGallery) galleryTabBar(widthOfTab, selectedPageValue),
-                if (enableCamera) photoTabBar(widthOfTab, photoColor),
-                if (enableVideo) videoTabBar(widthOfTab),
+                if (enableCamera && !isLimitImages)
+                  photoTabBar(widthOfTab, photoColor),
+                if (enableVideo && !isLimitVideos) videoTabBar(widthOfTab),
               ],
             ),
             AnimatedPositioned(

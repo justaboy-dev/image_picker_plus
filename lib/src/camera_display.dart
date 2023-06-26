@@ -5,6 +5,7 @@ import 'package:image_crop/image_crop.dart';
 import 'package:image_picker_plus/src/entities/app_theme.dart';
 import 'package:image_picker_plus/src/custom_packages/crop_image/crop_image.dart';
 import 'package:image_picker_plus/src/utilities/enum.dart';
+import 'package:image_picker_plus/src/utilities/method.dart';
 import 'package:image_picker_plus/src/video_layout/record_count.dart';
 import 'package:image_picker_plus/src/video_layout/record_fade_animation.dart';
 import 'package:image_picker_plus/src/entities/selected_image_details.dart';
@@ -24,6 +25,7 @@ class CustomCameraDisplay extends StatefulWidget {
   final ValueNotifier<bool> redDeleteText;
   final ValueChanged<bool> replacingTabBar;
   final ValueNotifier<bool> clearVideoRecord;
+  final List<File> selectedFile;
 
   const CustomCameraDisplay({
     Key? key,
@@ -37,6 +39,7 @@ class CustomCameraDisplay extends StatefulWidget {
     required this.replacingTabBar,
     required this.clearVideoRecord,
     required this.moveToVideoScreen,
+    required this.selectedFile,
   }) : super(key: key);
 
   @override
@@ -270,11 +273,23 @@ class CustomCameraDisplayState extends State<CustomCameraDisplay> {
                   selectedFile: videoRecordFile!,
                   selectedByte: byte,
                 );
+
+                List<SelectedByte> selectedFiles = [selectedByte];
+
+                for (var element in widget.selectedFile) {
+                  selectedFiles.add(SelectedByte(
+                    isThatImage: isImages(element),
+                    selectedFile: element,
+                    selectedByte: await element.readAsBytes(),
+                  ));
+                }
+
                 SelectedImagesDetails details = SelectedImagesDetails(
                   multiSelectionMode: false,
-                  selectedFiles: [selectedByte],
+                  selectedFiles: selectedFiles,
                   aspectRatio: 1.0,
                 );
+
                 if (!mounted) return;
                 Navigator.of(context).maybePop(details);
               } else if (selectedImage != null) {
@@ -288,8 +303,18 @@ class CustomCameraDisplayState extends State<CustomCameraDisplay> {
                     selectedByte: byte,
                   );
 
+                  List<SelectedByte> selectedFiles = [selectedByte];
+
+                  for (var element in widget.selectedFile) {
+                    selectedFiles.add(SelectedByte(
+                      isThatImage: isImages(element),
+                      selectedFile: element,
+                      selectedByte: await element.readAsBytes(),
+                    ));
+                  }
+
                   SelectedImagesDetails details = SelectedImagesDetails(
-                    selectedFiles: [selectedByte],
+                    selectedFiles: selectedFiles,
                     multiSelectionMode: false,
                     aspectRatio: 1.0,
                   );
