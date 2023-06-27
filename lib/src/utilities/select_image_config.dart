@@ -22,10 +22,10 @@ class SelectImageConfig {
 
   final List<File> selectedFiles;
 
-  SelectImageConfig({
+  const SelectImageConfig({
     this.maxFilesSize = 0,
-    this.maxVideos = 0,
-    this.maxImages = 0,
+    this.maxVideos = -1,
+    this.maxImages = -1,
     this.maxVideoDuration = const Duration(seconds: 0),
     this.maxFilesSizeError = 'Maximum file size exceeded',
     this.selectedFiles = const [],

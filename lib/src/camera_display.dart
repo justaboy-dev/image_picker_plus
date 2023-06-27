@@ -2,14 +2,11 @@ import 'dart:async';
 import 'dart:io';
 import 'package:camera/camera.dart';
 import 'package:image_crop/image_crop.dart';
-import 'package:image_picker_plus/src/entities/app_theme.dart';
+import 'package:image_picker_plus/image_picker_plus.dart';
 import 'package:image_picker_plus/src/custom_packages/crop_image/crop_image.dart';
 import 'package:image_picker_plus/src/utilities/enum.dart';
-import 'package:image_picker_plus/src/utilities/method.dart';
 import 'package:image_picker_plus/src/video_layout/record_count.dart';
 import 'package:image_picker_plus/src/video_layout/record_fade_animation.dart';
-import 'package:image_picker_plus/src/entities/selected_image_details.dart';
-import 'package:image_picker_plus/src/entities/tabs_texts.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:photo_manager/photo_manager.dart';
@@ -26,6 +23,7 @@ class CustomCameraDisplay extends StatefulWidget {
   final ValueChanged<bool> replacingTabBar;
   final ValueNotifier<bool> clearVideoRecord;
   final List<File> selectedFile;
+  final SelectImageConfig selectImageConfig;
 
   const CustomCameraDisplay({
     Key? key,
@@ -40,6 +38,7 @@ class CustomCameraDisplay extends StatefulWidget {
     required this.clearVideoRecord,
     required this.moveToVideoScreen,
     required this.selectedFile,
+    required this.selectImageConfig,
   }) : super(key: key);
 
   @override
@@ -53,7 +52,7 @@ class CustomCameraDisplayState extends State<CustomCameraDisplay> {
   bool allPermissionsAccessed = true;
 
   List<CameraDescription>? cameras;
-  late CameraController controller;
+  CameraController? controller;
 
   final cropKey = GlobalKey<CustomCropState>();
 
@@ -65,7 +64,7 @@ class CustomCameraDisplayState extends State<CustomCameraDisplay> {
   @override
   void dispose() {
     startVideoCount.dispose();
-    controller.dispose();
+    controller?.dispose();
     super.dispose();
   }
 
@@ -92,7 +91,7 @@ class CustomCameraDisplayState extends State<CustomCameraDisplay> {
         ResolutionPreset.high,
         enableAudio: true,
       );
-      await controller.initialize();
+      await controller?.initialize();
       initializeDone = true;
     } catch (e) {
       allPermissionsAccessed = false;
@@ -137,10 +136,10 @@ class CustomCameraDisplayState extends State<CustomCameraDisplay> {
         Flexible(
           child: Stack(
             children: [
-              if (selectedImage == null) ...[
+              if (selectedImage == null && controller != null) ...[
                 SizedBox(
                   width: double.infinity,
-                  child: CameraPreview(controller),
+                  child: CameraPreview(controller!),
                 ),
               ] else ...[
                 Align(
@@ -149,7 +148,7 @@ class CustomCameraDisplayState extends State<CustomCameraDisplay> {
                     color: whiteColor,
                     height: 360,
                     width: double.infinity,
-                    child: buildCrop(selectedImage),
+                    child: buildCrop(selectedImage!),
                   ),
                 )
               ],
@@ -217,10 +216,10 @@ class CustomCameraDisplayState extends State<CustomCameraDisplay> {
                 : (currentFlashMode == Flash.auto ? Flash.on : Flash.off);
           });
           currentFlashMode == Flash.on
-              ? controller.setFlashMode(FlashMode.torch)
+              ? controller?.setFlashMode(FlashMode.torch)
               : currentFlashMode == Flash.off
-                  ? controller.setFlashMode(FlashMode.off)
-                  : controller.setFlashMode(FlashMode.auto);
+                  ? controller?.setFlashMode(FlashMode.off)
+                  : controller?.setFlashMode(FlashMode.auto);
         },
         icon: Icon(
             currentFlashMode == Flash.on
@@ -348,12 +347,19 @@ class CustomCameraDisplayState extends State<CustomCameraDisplay> {
     return file;
   }
 
-  GestureDetector cameraButton(BuildContext context) {
+  Widget cameraButton(BuildContext context) {
     Color whiteColor = widget.appTheme.primaryColor;
+    bool isLimitImage = widget.selectedFile.where((e) => isImages(e)).length >= widget.selectImageConfig.maxImages;
+    bool isLimitVideo = widget.selectedFile.where((e) => isVideos(e)).length >= widget.selectImageConfig.maxVideos;
+    if (isLimitImage && !widget.selectedVideo) {
+      return tapBarMessage(widget.selectImageConfig.maxImages);
+    }
+    if (isLimitVideo && widget.selectedVideo) {
+      return tapBarMessage(widget.selectImageConfig.maxVideos);
+    }
+
     return GestureDetector(
-      onTap: widget.enableCamera ? onPress : null,
-      onLongPress: widget.enableVideo ? onLongTap : null,
-      onLongPressUp: widget.enableVideo ? onLongTapUp : onPress,
+      onTap: onPress,
       child: CircleAvatar(
           backgroundColor: Colors.grey[400],
           radius: 40,
@@ -364,40 +370,41 @@ class CustomCameraDisplayState extends State<CustomCameraDisplay> {
     );
   }
 
+  bool isRecording = false;
+
   onPress() async {
     try {
       if (!widget.selectedVideo) {
-        final image = await controller.takePicture();
-        File selectedImage = File(image.path);
-        setState(() {
-          widget.selectedCameraImage.value = selectedImage;
-          widget.replacingTabBar(true);
-        });
+        final image = await controller?.takePicture();
+        if (image != null) {
+          File selectedImage = File(image.path);
+          setState(() {
+            widget.selectedCameraImage.value = selectedImage;
+            widget.replacingTabBar(true);
+          });
+        }
       } else {
-        setState(() {
-          videoStatusAnimation = buildFadeAnimation();
-        });
+        if (isRecording == false) {
+          setState(() {
+            videoStatusAnimation = buildFadeAnimation();
+            startVideoCount.value = true;
+            isRecording = true;
+          });
+          controller?.startVideoRecording();
+        } else {
+          setState(() {
+            startVideoCount.value = false;
+            widget.replacingTabBar(true);
+          });
+          XFile? video = await controller?.stopVideoRecording();
+          if (video != null) {
+            videoRecordFile = File(video.path);
+          }
+        }
       }
     } catch (e) {
       if (kDebugMode) print(e);
     }
-  }
-
-  onLongTap() {
-    controller.startVideoRecording();
-    widget.moveToVideoScreen();
-    setState(() {
-      startVideoCount.value = true;
-    });
-  }
-
-  onLongTapUp() async {
-    setState(() {
-      startVideoCount.value = false;
-      widget.replacingTabBar(true);
-    });
-    XFile video = await controller.stopVideoRecording();
-    videoRecordFile = File(video.path);
   }
 
   RecordFadeAnimation buildFadeAnimation() {
@@ -436,6 +443,27 @@ class CustomCameraDisplayState extends State<CustomCameraDisplay> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget tapBarMessage(int maxValue) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(14.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Text(
+              "The limit is $maxValue photos or videos.",
+              style: const TextStyle(
+                  fontSize: 14,
+                  color: Colors.white,
+                  fontWeight: FontWeight.w500),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

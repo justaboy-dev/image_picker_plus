@@ -11,7 +11,7 @@ class ImagePickerPlus {
     required ImageSource source,
     GalleryDisplaySettings? galleryDisplaySettings,
     bool multiImages = false,
-    SelectImageConfig? selectImageConfig,
+    SelectImageConfig selectImageConfig = const SelectImageConfig(),
   }) async {
     return _pushToCustomPicker(
       galleryDisplaySettings: galleryDisplaySettings,
@@ -26,7 +26,7 @@ class ImagePickerPlus {
     required ImageSource source,
     GalleryDisplaySettings? galleryDisplaySettings,
     bool multiVideos = false,
-    SelectImageConfig? selectImageConfig,
+    SelectImageConfig selectImageConfig = const SelectImageConfig(),
   }) async {
     return _pushToCustomPicker(
       galleryDisplaySettings: galleryDisplaySettings,
@@ -41,7 +41,7 @@ class ImagePickerPlus {
     required ImageSource source,
     GalleryDisplaySettings? galleryDisplaySettings,
     bool multiSelection = false,
-    SelectImageConfig? selectImageConfig,
+    SelectImageConfig selectImageConfig = const SelectImageConfig(),
   }) async {
     return _pushToCustomPicker(
       galleryDisplaySettings: galleryDisplaySettings,
@@ -57,7 +57,7 @@ class ImagePickerPlus {
     GalleryDisplaySettings? galleryDisplaySettings,
     bool multiSelection = false,
     required PickerSource pickerSource,
-    SelectImageConfig? selectImageConfig,
+    SelectImageConfig selectImageConfig = const SelectImageConfig(),
   }) async {
     return await Navigator.of(_context, rootNavigator: true).push(
       MaterialPageRoute(

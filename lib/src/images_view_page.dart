@@ -30,6 +30,7 @@ class ImagesViewPage extends StatefulWidget {
   final bool showImagePreview;
   final SliverGridDelegateWithFixedCrossAxisCount gridDelegate;
   final SelectImageConfig selectImageConfig;
+  final ValueChanged<bool> onChange;
   const ImagesViewPage({
     Key? key,
     required this.multiSelectedImages,
@@ -48,6 +49,7 @@ class ImagesViewPage extends StatefulWidget {
     required this.maximumSelection,
     this.callbackFunction,
     required this.selectImageConfig,
+    required this.onChange,
   }) : super(key: key);
 
   @override
@@ -142,7 +144,8 @@ class _ImagesViewPageState extends State<ImagesViewPage>
       } else if (noImages) {
         noImages = false;
       }
-      List<AssetEntity> media = await albums[0].getAssetListPaged(page: currentPageValue, size: 60);
+      List<AssetEntity> media =
+          await albums[0].getAssetListPaged(page: currentPageValue, size: 60);
       List<FutureBuilder<Uint8List?>> temp = [];
       List<File?> imageTemp = [];
 
@@ -530,6 +533,7 @@ class _ImagesViewPageState extends State<ImagesViewPage>
                     setState(() => noPaddingForGridView = true);
                   } else {
                     onTapImage(image, selectedImagesValue, index);
+                    setState(() {});
                   }
                 },
                 child: childWidget),
@@ -541,6 +545,7 @@ class _ImagesViewPageState extends State<ImagesViewPage>
     setState(() {
       if (widget.multiSelectionMode.value) {
         bool close = selectionImageCheck(image, selectedImagesValue, index);
+        widget.onChange(true);
         if (close) return;
       }
 
@@ -558,6 +563,7 @@ class _ImagesViewPageState extends State<ImagesViewPage>
       enableVerticalTapping.value = false;
       noPaddingForGridView = true;
     });
+    widget.onChange(true);
   }
 
   bool selectionImageCheck(
@@ -592,7 +598,7 @@ class _ImagesViewPageState extends State<ImagesViewPage>
           }
         }
 
-        if (widget.selectImageConfig.maxImages > 0 && isImages(image)) {
+        if (widget.selectImageConfig.maxImages != -1 && isImages(image)) {
           final int numberOfImages =
               multiSelectionValue.where((element) => isImages(element)).length;
           if (numberOfImages >= widget.selectImageConfig.maxImages) {
@@ -600,7 +606,7 @@ class _ImagesViewPageState extends State<ImagesViewPage>
           }
         }
 
-        if (widget.selectImageConfig.maxVideos > 0 && isVideos(image)) {
+        if (widget.selectImageConfig.maxVideos != -1 && isVideos(image)) {
           final int numberOfVideos =
               multiSelectionValue.where((element) => isVideos(element)).length;
           if (numberOfVideos >= widget.selectImageConfig.maxVideos) {

@@ -12,13 +12,13 @@ class CustomImagePicker extends StatefulWidget {
   final bool multiSelection;
   final GalleryDisplaySettings? galleryDisplaySettings;
   final PickerSource pickerSource;
-  final SelectImageConfig? selectImageConfig;
+  final SelectImageConfig selectImageConfig;
   const CustomImagePicker({
     required this.source,
     required this.multiSelection,
     required this.galleryDisplaySettings,
     required this.pickerSource,
-    this.selectImageConfig,
+    required this.selectImageConfig,
     super.key,
   });
 
@@ -97,7 +97,8 @@ class CustomImagePickerState extends State<CustomImagePicker>
     showAllTabs = cameraAndVideoEnabled && noGallery;
     whiteColor = appTheme.primaryColor;
     blackColor = appTheme.focusColor;
-    multiSelectedImage.value = List.from(widget.selectImageConfig?.selectedFiles ?? []);
+    multiSelectedImage.value =
+        List.from(widget.selectImageConfig.selectedFiles);
   }
 
   @override
@@ -117,47 +118,6 @@ class CustomImagePickerState extends State<CustomImagePicker>
   @override
   Widget build(BuildContext context) {
     return tabController();
-  }
-
-  Widget tapBarMessage(bool isThatDeleteText) {
-    Color deleteColor = redDeleteText.value ? Colors.red : appTheme.focusColor;
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(14.0),
-        child: GestureDetector(
-          onTap: () async {
-            if (isThatDeleteText) {
-              setState(() {
-                if (!redDeleteText.value) {
-                  redDeleteText.value = true;
-                } else {
-                  selectedCameraImage.value = null;
-                  clearVideoRecord.value = true;
-                  showDeleteText.value = false;
-                  redDeleteText.value = false;
-                }
-              });
-            }
-          },
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              if (isThatDeleteText)
-                Icon(Icons.arrow_back_ios_rounded,
-                    color: deleteColor, size: 15),
-              Text(
-                isThatDeleteText ? tapsNames.deletingText : limitingText,
-                style: TextStyle(
-                    fontSize: 14,
-                    color: deleteColor,
-                    fontWeight: FontWeight.w500),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 
   Widget clearSelectedImages() {
@@ -225,29 +185,25 @@ class CustomImagePickerState extends State<CustomImagePicker>
               ),
             ),
           ),
-          if (multiSelectedImage.value.length < maximumSelection) ...[
-            ValueListenableBuilder(
-              valueListenable: multiSelectionMode,
-              builder: (context, bool multiSelectionModeValue, child) {
-                if (enableVideo || enableCamera) {
-                  if (!showImagePreview) {
-                    return buildTabBar();
-                  } else {
-                    return Visibility(
-                      visible: !multiSelectionModeValue,
-                      child: buildTabBar(),
-                    );
-                  }
+          ValueListenableBuilder(
+            valueListenable: multiSelectionMode,
+            builder: (context, bool multiSelectionModeValue, child) {
+              if (enableVideo || enableCamera) {
+                if (!showImagePreview) {
+                  return buildTabBar();
                 } else {
-                  return multiSelectionModeValue
-                      ? clearSelectedImages()
-                      : const SizedBox();
+                  return Visibility(
+                    visible: !multiSelectionModeValue,
+                    child: buildTabBar(),
+                  );
                 }
-              },
-            )
-          ] else ...[
-            tapBarMessage(false)
-          ],
+              } else {
+                return multiSelectionModeValue
+                    ? clearSelectedImages()
+                    : const SizedBox();
+              }
+            },
+          )
         ],
       ),
     );
@@ -268,6 +224,7 @@ class CustomImagePickerState extends State<CustomImagePicker>
         moveToVideoScreen: moveToVideo,
         selectedVideo: selectedVideoValue,
         selectedFile: multiSelectedImage.value,
+        selectImageConfig: widget.selectImageConfig,
       ),
     );
   }
@@ -296,7 +253,8 @@ class CustomImagePickerState extends State<CustomImagePicker>
       showInternalVideos: showInternalVideos,
       showInternalImages: showInternalImages,
       maximumSelection: maximumSelection,
-      selectImageConfig: widget.selectImageConfig ?? SelectImageConfig(),
+      selectImageConfig: widget.selectImageConfig,
+      onChange: (value) => setState(() {}),
     );
   }
 
@@ -318,17 +276,16 @@ class CustomImagePickerState extends State<CustomImagePicker>
 
     bool isLimitVideos = false;
     bool isLimitImages = false;
-    if (widget.selectImageConfig != null &&
-        widget.selectImageConfig!.maxImages > 0) {
-      final int numberOfImages = multiSelectedImage.value.where((element) => isImages(element)).length;
-      isLimitImages = numberOfImages >= widget.selectImageConfig!.maxImages;
+    if (widget.selectImageConfig.maxImages > -1) {
+      final int numberOfImages =
+          multiSelectedImage.value.where((element) => isImages(element)).length;
+      isLimitImages = numberOfImages >= widget.selectImageConfig.maxImages;
     }
 
-    if (widget.selectImageConfig != null &&
-        widget.selectImageConfig!.maxVideos > 0) {
+    if (widget.selectImageConfig.maxVideos > -1) {
       final int numberOfVideos =
           multiSelectedImage.value.where((element) => isVideos(element)).length;
-      isLimitVideos = numberOfVideos >= widget.selectImageConfig!.maxVideos;
+      isLimitVideos = numberOfVideos >= widget.selectImageConfig.maxVideos;
     }
 
     return ValueListenableBuilder(
