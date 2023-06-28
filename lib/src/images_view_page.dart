@@ -10,6 +10,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:photo_manager/photo_manager.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:video_compress/video_compress.dart';
 
 class ImagesViewPage extends StatefulWidget {
   final ValueNotifier<List<File>> multiSelectedImages;
@@ -375,13 +376,24 @@ class _ImagesViewPageState extends State<ImagesViewPage>
             List<SelectedByte> selectedBytes = [];
             for (int i = 0; i < widget.multiSelectedImages.value.length; i++) {
               File currentImage = widget.multiSelectedImages.value[i];
-              String path = currentImage.path;
-              bool isThatVideo = path.contains("mp4", path.length - 5);
+              bool isThatVideo = isVideos(currentImage);
               File? croppedImage = !isThatVideo && widget.cropImage
                   ? await cropImage(currentImage, indexOfCropImage: i)
                   : null;
               File image = croppedImage ?? currentImage;
-              Uint8List byte = await image.readAsBytes();
+
+              Uint8List byte = Uint8List(0);
+
+              if (!isThatVideo) {
+                byte = await image.readAsBytes();
+              } else {
+                byte = (await VideoCompress.getByteThumbnail(
+                  image.path,
+                  quality: 50,
+                  position: 0,
+                ))!;
+              }
+
               SelectedByte img = SelectedByte(
                 isThatImage: !isThatVideo,
                 selectedFile: image,
@@ -406,14 +418,23 @@ class _ImagesViewPageState extends State<ImagesViewPage>
           } else {
             File? image = selectedImage.value;
             if (image == null) return;
-            String path = image.path;
 
-            bool isThatVideo = path.contains("mp4", path.length - 5);
+            bool isThatVideo = isVideos(image);
             File? croppedImage = !isThatVideo && widget.cropImage
                 ? await cropImage(image)
                 : null;
             File img = croppedImage ?? image;
-            Uint8List byte = await img.readAsBytes();
+            Uint8List byte = Uint8List(0);
+
+            if (!isThatVideo) {
+              byte = await img.readAsBytes();
+            } else {
+              byte = (await VideoCompress.getByteThumbnail(
+                img.path,
+                quality: 50,
+                position: 0,
+              ))!;
+            }
 
             SelectedByte selectedByte = SelectedByte(
               isThatImage: !isThatVideo,
@@ -436,6 +457,16 @@ class _ImagesViewPageState extends State<ImagesViewPage>
         },
       ),
     );
+  }
+
+  Future<File?> compressVideoFile(File videoFile) async {
+    final MediaInfo? info = await VideoCompress.compressVideo(
+      videoFile.path,
+      quality: VideoQuality.MediumQuality,
+      deleteOrigin: false,
+    );
+    if (info == null) return null;
+    return File(info.path!);
   }
 
   Widget normalGridView(List<FutureBuilder<Uint8List?>> mediaListValue,
