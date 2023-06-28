@@ -111,6 +111,13 @@ class _ImagesViewPageState extends State<ImagesViewPage>
     super.dispose();
   }
 
+  @override
+  void setState(VoidCallback fn) {
+    if (mounted) {
+      super.setState(fn);
+    }
+  }
+
   late Widget forBack;
   @override
   void initState() {
