@@ -10,6 +10,7 @@ import 'package:image_picker_plus/src/video_layout/record_fade_animation.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:photo_manager/photo_manager.dart';
+import 'package:video_compress/video_compress.dart';
 
 class CustomCameraDisplay extends StatefulWidget {
   final bool selectedVideo;
@@ -266,22 +267,33 @@ class CustomCameraDisplayState extends State<CustomCameraDisplay> {
                 color: Colors.blue, size: 30),
             onPressed: () async {
               if (videoRecordFile != null) {
-                Uint8List byte = await videoRecordFile!.readAsBytes();
+                Uint8List? byte = await VideoCompress.getByteThumbnail(
+                  videoRecordFile!.path,
+                );
                 SelectedByte selectedByte = SelectedByte(
                   isThatImage: false,
                   selectedFile: videoRecordFile!,
-                  selectedByte: byte,
+                  selectedByte: byte!,
                 );
 
                 List<SelectedByte> selectedFiles = [selectedByte];
 
-                for (var element in widget.selectedFile) {
+                await Future.forEach<File>(widget.selectedFile,
+                    (element) async {
+                  Uint8List? byte;
+                  if (isVideos(element)) {
+                    byte = await VideoCompress.getByteThumbnail(
+                      element.path,
+                    );
+                  } else {
+                    byte = element.readAsBytesSync();
+                  }
                   selectedFiles.add(SelectedByte(
                     isThatImage: isImages(element),
                     selectedFile: element,
-                    selectedByte: await element.readAsBytes(),
+                    selectedByte: byte!,
                   ));
-                }
+                });
 
                 SelectedImagesDetails details = SelectedImagesDetails(
                   multiSelectionMode: false,
@@ -349,8 +361,10 @@ class CustomCameraDisplayState extends State<CustomCameraDisplay> {
 
   Widget cameraButton(BuildContext context) {
     Color whiteColor = widget.appTheme.primaryColor;
-    bool isLimitImage = widget.selectedFile.where((e) => isImages(e)).length >= widget.selectImageConfig.maxImages;
-    bool isLimitVideo = widget.selectedFile.where((e) => isVideos(e)).length >= widget.selectImageConfig.maxVideos;
+    bool isLimitImage = widget.selectedFile.where((e) => isImages(e)).length >=
+        widget.selectImageConfig.maxImages;
+    bool isLimitVideo = widget.selectedFile.where((e) => isVideos(e)).length >=
+        widget.selectImageConfig.maxVideos;
     if (isLimitImage && !widget.selectedVideo) {
       return tapBarMessage(widget.selectImageConfig.maxImages);
     }
